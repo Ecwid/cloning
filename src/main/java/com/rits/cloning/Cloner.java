@@ -687,7 +687,7 @@ public class Cloner {
 				}
 				l.add(field);
 			} catch (InaccessibleObjectException e) {
-				log.warning("Unable to ");
+				log.warning("Unable to duplicate field " + clazz.getName() + "." + field.getName());
 			}
 		}
 	}
