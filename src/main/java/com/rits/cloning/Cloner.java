@@ -11,6 +11,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
@@ -31,6 +32,8 @@ public class Cloner {
 	private List<ICloningStrategy> cloningStrategies;
 
 	private Map<Object, Object> ignoredInstances;
+
+	private static final Logger log = Logger.getLogger(Cloner.class.getName());
 
 	public IDumpCloned getDumpCloned() {
 		return dumpCloned;
@@ -675,12 +678,17 @@ public class Cloner {
 	/**
 	 * reflection utils
 	 */
-	private void addAll(final List<Field> l, final Field[] fields) {
+	private void addAll(final List<Field> l, final Class clazz) {
+		final Field[] fields = clazz.getDeclaredFields();
 		for (final Field field : fields) {
-			if (!field.isAccessible()) {
-				field.setAccessible(true);
+			try {
+				if (!field.isAccessible()) {
+					field.setAccessible(true);
+				}
+				l.add(field);
+			} catch (InaccessibleObjectException e) {
+				log.warning("Unable to ");
 			}
-			l.add(field);
 		}
 	}
 
@@ -692,10 +700,10 @@ public class Cloner {
 		if (l == null) {
 			l = new LinkedList<Field>();
 			final Field[] fields = c.getDeclaredFields();
-			addAll(l, fields);
+			addAll(l, c);
 			Class<?> sc = c;
 			while ((sc = sc.getSuperclass()) != Object.class && sc != null) {
-				addAll(l, sc.getDeclaredFields());
+				addAll(l, sc);
 			}
 			fieldsCache.putIfAbsent(c, l);
 		}
