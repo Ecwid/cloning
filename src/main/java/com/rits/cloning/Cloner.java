@@ -161,6 +161,12 @@ public class Cloner {
 			throw new CloningException(e);
 		} catch (final IllegalAccessException e) {
 			throw new CloningException(e);
+		} catch (RuntimeException e) {
+			if ("InaccessibleObjectException".equals(e.getClass().getSimpleName())) {
+				log.warning("Unable to duplicate field " + c.getName() + "." + privateFieldName);
+			} else {
+				throw e;
+			}
 		}
 	}
 
@@ -567,15 +573,23 @@ public class Cloner {
 			do {
 				Field[] fs = sc.getDeclaredFields();
 				for (final Field f : fs) {
-					if (!f.isAccessible()) {
-						f.setAccessible(true);
-					}
-					int modifiers = f.getModifiers();
-					if (!Modifier.isStatic(modifiers)) {
-						if (!(nullTransient && Modifier.isTransient(modifiers))) {
-							l.add(f);
-							boolean shouldClone = (cloneSynthetics || !f.isSynthetic()) && (cloneAnonymousParent || !isAnonymousParent(f));
-							shouldCloneList.add(shouldClone);
+					try {
+						if (!f.isAccessible()) {
+							f.setAccessible(true);
+						}
+						int modifiers = f.getModifiers();
+						if (!Modifier.isStatic(modifiers)) {
+							if (!(nullTransient && Modifier.isTransient(modifiers))) {
+								l.add(f);
+								boolean shouldClone = (cloneSynthetics || !f.isSynthetic()) && (cloneAnonymousParent || !isAnonymousParent(f));
+								shouldCloneList.add(shouldClone);
+							}
+						}
+					} catch (RuntimeException e) {
+						if ("InaccessibleObjectException".equals(e.getClass().getSimpleName())) {
+							log.warning("Unable to duplicate field " + clz.getName() + "." + f.getName());
+						} else {
+							throw e;
 						}
 					}
 				}
@@ -670,6 +684,12 @@ public class Cloner {
 					throw new CloningException(e);
 				} catch (final IllegalAccessException e) {
 					throw new CloningException(e);
+				} catch (RuntimeException e) {
+					if ("InaccessibleObjectException".equals(e.getClass().getSimpleName())) {
+						log.warning("Unable to duplicate field " + srcClz.getName() + "." + field.getName());
+					} else {
+						throw e;
+					}
 				}
 			}
 		}
